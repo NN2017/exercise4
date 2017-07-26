@@ -10,7 +10,7 @@ class Classifier:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def train(self, trainingSet, validationSet):
+    def train(self, verbose=True): # trainingSet, validationSet):
         # train procedures of the classifier
         pass
 

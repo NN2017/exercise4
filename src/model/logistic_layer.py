@@ -39,7 +39,7 @@ class LogisticLayer():
     """
 
     def __init__(self, nIn, nOut, weights=None,
-                 activation='sigmoid', isClassifierLayer=False):
+                 activation='sigmoid', isClassifierLayer=False, name=""):
 
         # Get activation function from string
         self.activationString = activation
@@ -68,6 +68,8 @@ class LogisticLayer():
         # Some handy properties of the layers
         self.size = self.nOut
         self.shape = self.weights.shape
+        self.name = name
+        print("Created", self.name, "layer with weights", self.shape, "delta:", self.deltas.shape, )
 
     def forward(self, inp):
         """
@@ -125,7 +127,16 @@ class LogisticLayer():
         # Or even more general: doesn't care which activation function is used
         # dado: derivative of activation function w.r.t the output
         dado = self.activationDerivative(self.outp)
-        self.deltas = (dado * np.dot(next_derivatives, next_weights))
+        #self.deltas = (dado * np.dot(next_derivatives, next_weights))
+        #                            d_downstream,     weights_wihtout bias.
+
+
+        # for each of the neurons in this layer:
+        for j in range(len(dado)):
+            self.deltas[j] = 0
+            for k in range(len(next_derivatives)):
+                self.deltas[j] += next_derivatives[k] * (1 if self.isClassifierLayer else next_weights[j,k])
+            self.deltas[j] *= dado[j]
 
         # Or you can explicitly calculate the derivatives for two cases
         # Page 40 Back-propagation slides

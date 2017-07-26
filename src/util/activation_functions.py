@@ -8,6 +8,8 @@ from numpy import exp
 from numpy import divide
 from numpy import ones
 from numpy import asarray
+from numpy import sum
+import numpy as np
 
 
 class Activation:
@@ -22,7 +24,9 @@ class Activation:
     @staticmethod
     def sigmoid(netOutput):
         # use e^x from numpy to avoid overflow
-        return 1/(1+exp(-1.0*netOutput))
+        np.seterr(over="raise", divide="raise")
+        re = 1/(1+exp(-1.0*netOutput))
+        return re
 
     @staticmethod
     def sigmoidPrime(netOutput):
@@ -63,14 +67,19 @@ class Activation:
 
     @staticmethod
     def softmax(netOutput):
-        # Here you have to code the softmax function
-        pass
+        # Don't use softmax when there is only one neuron, result will always be 1
+        #norm = sum(Activation.sigmoid(netOutput))
+        #return Activation.sigmoid(netOutput) / norm
+        norm = sum(exp(netOutput))
+        return exp(netOutput) / norm
         
     @staticmethod
     def softmaxPrime(netOutput):
         # Here you have to code the softmax function
-        pass
-        
+        return Activation.softmax(netOutput) * (1 - Activation.softmax(netOutput))
+
+
+
     @staticmethod
     def getActivation(str):
         """

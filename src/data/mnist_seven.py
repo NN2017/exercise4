@@ -39,29 +39,31 @@ class MNISTSeven(object):
                         numTrain=3000, 
                         numValid=1000,
                         numTest=1000,
-                        oneHot=True,
                         targetDigit='7'):
 
         self.trainingSet = []
         self.validationSet = []
         self.testSet = []
 
-        self.load(dataPath, numTrain, numValid, numTest, oneHot, targetDigit)
+        self.load(dataPath, numTrain, numValid, numTest, targetDigit)
 
-    def load(self, dataPath, numTrain, numValid, numTest, oneHot, targetDigit):
+    def load(self, dataPath, numTrain, numValid, numTest,  targetDigit):
         """Load the data."""
         print("Loading data from " + dataPath + "...")
 
         data = np.genfromtxt(dataPath, delimiter=",", dtype="uint8")
-
+        #np.save("data.hd5", data)
+        #data = np.load("data.hd5")
         # The last numTest instances ALWAYS comprise the test set.
         train, test = data[:numTrain+numValid], data[numTrain+numValid:]
         shuffle(train)
 
         train, valid = train[:numTrain], train[numTrain:]
+        test = test[-numTest:]
+        self.trainingSet = DataSet(train, targetDigit)
+        self.validationSet = DataSet(valid, targetDigit)
+        self.testSet = DataSet(test, targetDigit)
 
-        self.trainingSet = DataSet(train, oneHot, targetDigit)
-        self.validationSet = DataSet(valid, oneHot, targetDigit)
-        self.testSet = DataSet(test, oneHot, targetDigit)
-
-        print("Data loaded.")
+        print("Data loaded. Train:", self.trainingSet.input.shape, np.array(self.trainingSet.label).shape,
+                            "Val:", self.validationSet.input.shape,
+                            "Test:", self.testSet.input.shape)
