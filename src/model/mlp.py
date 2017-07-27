@@ -1,3 +1,4 @@
+from __future__ import print_function
 from model.logistic_layer import LogisticLayer
 from model.classifier import Classifier
 from sklearn.metrics import accuracy_score

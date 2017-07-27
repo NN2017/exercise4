@@ -105,11 +105,12 @@ class BinaryCrossEntropyError(Error):
     def errorString(self):
         self.errorString = 'bce'
 
-    def calculateError(self, target: np.ndarray, output: np.ndarray):
+    def calculateError(self, target, output):
+        # type: (np.ndarray, np.ndarray) -> np.ndarray
         """
         :param target: ndarray (nNeurons_final_layer, 1)
         :param output: ndarray (nNeurons_final_layer, 1)
-        :return: float
+        :return: ndarray (1,1)
 
         BCE always positive, tends towards 0 for better match
         """
@@ -117,7 +118,8 @@ class BinaryCrossEntropyError(Error):
         n = np.asarray(target).size
         return -np.sum(target*np.log(output) + (1-target)*np.log(1-output))/n
         
-    def calculateDerivative(self, target: np.ndarray, output: np.ndarray, debug=False, clip=1):
+    def calculateDerivative(self, target, output, debug=False, clip=1):
+        # type: (np.ndarray, np.ndarray, bool, int) -> np.ndarray
         """
         :param target: ndarray (nNeurons_final_layer, 1)
         :param output: ndarray (nNeurons_final_layer, 1)
