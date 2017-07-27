@@ -43,7 +43,8 @@ def main():
                                            loss='bce',
                                            inputWeights=None,
                                            epochs=5,
-                                           outputActivation="softmax"
+                                           outputActivation="softmax",
+                                           clip=10
                                            )
 
     print("=========================")

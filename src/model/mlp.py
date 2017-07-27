@@ -2,6 +2,8 @@ from model.logistic_layer import LogisticLayer
 from model.classifier import Classifier
 from sklearn.metrics import accuracy_score
 from util.loss_functions import *
+from report.evaluator import Evaluator
+
 
 import numpy as np
 
@@ -13,7 +15,7 @@ class MultilayerPerceptron(Classifier):
 
     def __init__(self, train, valid, test, hypes=[30], inputWeights=None,
                  outputTask='classification', outputActivation='softmax',
-                 loss='bce', learningRate=0.01, epochs=50, cost=None, name=""):
+                 loss='bce', learningRate=0.01, epochs=50, cost=None, name="", clip=10):
 
         """
         A MNIST recognizer based on multi-layer perceptron algorithm
@@ -41,6 +43,7 @@ class MultilayerPerceptron(Classifier):
         self.outputTask = outputTask  # Either classification or regression
         self.outputActivation = outputActivation
         self.cost = cost
+        self.clip = clip
 
         self.trainingSet = train
         self.validationSet = valid
@@ -67,6 +70,7 @@ class MultilayerPerceptron(Classifier):
         self.losses = []
         self.loss_value = None
         self.name = name
+        self.evaluator = Evaluator()
 
         # Build up the network from specific layers
         self.layers = []
@@ -103,6 +107,7 @@ class MultilayerPerceptron(Classifier):
         self.validationSet.input = np.insert(self.validationSet.input, 0, 1,
                                               axis=1)
         self.testSet.input = np.insert(self.testSet.input, 0, 1, axis=1)
+        #self.testSet.label = np.argmax(self.testSet.label, axis=1)
 
 
     def _get_layer(self, layer_index):
@@ -155,7 +160,7 @@ class MultilayerPerceptron(Classifier):
             #a numpy array (1,nOut) containing the output of the layer
             now returns ndarray (nNeurons_final_layer,1) loss value
         """
-        self.loss_value = self.loss.calculateDerivative(target, outp)
+        self.loss_value = self.loss.calculateDerivative(target, outp, clip=self.clip)
         if np.max(np.abs(self.loss_value)) > 10.0:
             print("idx:", idx)
             print("target:\n",target)
@@ -224,12 +229,15 @@ class MultilayerPerceptron(Classifier):
                 self.trainingSet.label,
                 range(len(self.trainingSet.input))):
 
-            if idx % 100 == 0 and idx != 0:
+            if idx % 100 == 0 and idx > 1 or 1 < idx < 100:
+                #   self.learningRate *= 0.9
+                test_accuracy = accuracy_score(list(np.argmax(self.testSet.label, axis=1)), self.evaluate())*100
                 print("Datapoint", idx, "/", len(self.trainingSet.input),
                       "Mean loss:", np.mean(epoch_losses),
-                      "Elapsed Time: {0:.2f}s".format(time.time()-start_time)
+                      "Elapsed Time: {0:.2f}s".format(time.time()-start_time),
+                      #"Learning Rate: {0:.4f}".format(self.learningRate),
+                      "Testset Acc: {0:.2f}".format(test_accuracy)
                       )
-
             # Do a forward pass to calculate the output and the error
             outp = self._feed_forward(img, idx=idx)
 
@@ -240,6 +248,7 @@ class MultilayerPerceptron(Classifier):
             #                             label,self.layer.outp), 1.0)
             try:
                 epoch_losses.append(self._compute_error(label, outp, idx=idx))
+
                 self._update_weights(self.learningRate)
             except FloatingPointError:
                 print("encountered overflow on index", idx, "output is", outp)
@@ -261,7 +270,7 @@ class MultilayerPerceptron(Classifier):
         else:
             return 1 if outp > 0.5 else 0
 
-    def evaluate(self, test=None):
+    def evaluate(self, test=None, oneHot=True):
         """Evaluate a whole dataset.
 
         Parameters
@@ -278,7 +287,10 @@ class MultilayerPerceptron(Classifier):
             test = self.testSet.input
         # Once you can classify an instance, just use map for all of the test
         # set.
-        return list(map(self.classify, test))
+        result = map(self.classify, test)
+        if not oneHot:
+            result = np.argmax(result, axis=1)
+        return list(result)
 
     def __del__(self):
         # Remove the bias from input data

@@ -159,5 +159,5 @@ class LogisticLayer():
             for feature in range(self.nIn +1):
                 update = learningRate * self.deltas[neuron] * self.inp[feature]
                 if update > 1:
-                    raise ValueError
+                    raise(ValueError, "I don't want to have to high updates to the weights")
                 self.weights[feature, neuron] -= update

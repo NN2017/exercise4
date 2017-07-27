@@ -117,7 +117,7 @@ class BinaryCrossEntropyError(Error):
         n = np.asarray(target).size
         return -np.sum(target*np.log(output) + (1-target)*np.log(1-output))/n
         
-    def calculateDerivative(self, target: np.ndarray, output: np.ndarray, debug=False):
+    def calculateDerivative(self, target: np.ndarray, output: np.ndarray, debug=False, clip=1):
         """
         :param target: ndarray (nNeurons_final_layer, 1)
         :param output: ndarray (nNeurons_final_layer, 1)
@@ -134,8 +134,8 @@ class BinaryCrossEntropyError(Error):
             debug = 0
         np.seterr(over="raise", divide="raise", invalid='raise')
 
-        real_bce =  -target/output + (1-target)/(1-output)
-        return np.clip(real_bce, -10, 10)
+        real_bce = -target/output + (1-target)/(1-output)
+        return np.clip(real_bce, -clip, clip)
  
 
 class CrossEntropyError(Error):
