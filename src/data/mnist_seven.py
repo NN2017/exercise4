@@ -41,9 +41,9 @@ class MNISTSeven(object):
                         numTest=1000,
                         targetDigit='7'):
 
-        self.trainingSet = []
-        self.validationSet = []
-        self.testSet = []
+        self.trainingSet = None
+        self.validationSet = None
+        self.testSet = None
 
         self.load(dataPath, numTrain, numValid, numTest, targetDigit)
 
@@ -52,8 +52,6 @@ class MNISTSeven(object):
         print("Loading data from " + dataPath + "...")
 
         data = np.genfromtxt(dataPath, delimiter=",", dtype="uint8")
-        #np.save("data.hd5", data)
-        #data = np.load("data.hd5")
         # The last numTest instances ALWAYS comprise the test set.
         train, test = data[:numTrain+numValid], data[numTrain+numValid:]
         shuffle(train)
@@ -64,6 +62,6 @@ class MNISTSeven(object):
         self.validationSet = DataSet(valid, targetDigit)
         self.testSet = DataSet(test, targetDigit)
 
-        print("Data loaded. Train:", self.trainingSet.input.shape, np.array(self.trainingSet.label).shape,
-                            "Val:", self.validationSet.input.shape,
-                            "Test:", self.testSet.input.shape)
+        print("Data loaded") # Train:", self.trainingSet.input, np.array(self.trainingSet.label).shape,
+        #                     "Val:", self.validationSet.input.shape,
+        #                     "Test:", self.testSet.input.shape)

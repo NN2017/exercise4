@@ -1,20 +1,17 @@
+from model.logistic_layer import LogisticLayer
+from model.classifier import Classifier
+from sklearn.metrics import accuracy_score
+from util.loss_functions import *
 
 import numpy as np
 
-from util.loss_functions import CrossEntropyError
-from model.logistic_layer import LogisticLayer
-from model.classifier import Classifier
 
-from sklearn.metrics import accuracy_score
-
-import sys
-from util.loss_functions import *
 class MultilayerPerceptron(Classifier):
     """
     A multilayer perceptron used for classification
     """
 
-    def __init__(self, train, valid, test, hypes=[128], inputWeights=None,
+    def __init__(self, train, valid, test, hypes=[30], inputWeights=None,
                  outputTask='classification', outputActivation='softmax',
                  loss='bce', learningRate=0.01, epochs=50, cost=None, name=""):
 
@@ -23,17 +20,17 @@ class MultilayerPerceptron(Classifier):
 
         Parameters
         ----------
-        train : list
-        valid : list
-        test : list
+        train : data_set
+        valid : data_set
+        test : data_set
         learningRate : float
         epochs : positive int
 
         Attributes
         ----------
-        trainingSet : list
-        validationSet : list
-        testSet : list
+        trainingSet : data_set
+        validationSet : data_set
+        testSet : data_set
         learningRate : float
         epochs : positive int
         performances: array of floats
@@ -61,13 +58,14 @@ class MultilayerPerceptron(Classifier):
             self.loss = AbsoluteError()
         else:
             raise ValueError('There is no predefined loss function ' +
-                             'named ' + str)
+                             'named ' + loss)
 
         # Record the performance of each epoch for later usages
         # e.g. plotting, reporting..
         self.performances = []
         self.performances_trainset = []
         self.losses = []
+        self.loss_value = None
         self.name = name
 
         # Build up the network from specific layers
@@ -76,7 +74,7 @@ class MultilayerPerceptron(Classifier):
         # Input layer (a hidden layer)
         assert len(hypes) >= 1, "there has to be >1 hidden layer"
         inputActivation = "sigmoid"
-        self.layers.append(LogisticLayer(train.input.shape[1], hypes[0],
+        self.layers.append(LogisticLayer(self.trainingSet.input.shape[1], hypes[0],
                            None, inputActivation, False, name="layer0"))
         # Inner layers (a hidden layer)
         for l in range(1, len(hypes)):
@@ -85,7 +83,7 @@ class MultilayerPerceptron(Classifier):
 
         # Output layer
         try:
-            outlayer_size = len(train.label[0])
+            outlayer_size = len(self.trainingSet.label[0])
         except TypeError:
             outlayer_size = 1
         self.layers.append(LogisticLayer(hypes[-1], outlayer_size,
@@ -130,26 +128,45 @@ class MultilayerPerceptron(Classifier):
         """
         temp_outp = None
         temp_inp = inp
+        # if idx == 1:
+        #     print("input:", inp)
         for layer in self.layers:
             temp_outp = layer.forward(temp_inp)
             temp_inp = np.insert(temp_outp, 0, 1)
+            # if idx == 1:
+            #     print("@ weights: \n",layer.weights)
+            #     print("x:\n", layer.preactivation)
+            #     print("y:\n", layer.outp)
         return temp_outp
         
-    def _compute_error(self, target, outp):
+    def _compute_error(self, target, outp, idx=None):
         """
         Compute the total error of the network (error terms from the output layer)
 
+        Parameters
+        -------
+        target: ndarray
+            a numpy array (1, nNeurons_final_layer)
+        outp: ndarray
+            a numpy array (1, nNeurons_final_layer)
         Returns
         -------
         ndarray :
-            a numpy array (1,nOut) containing the output of the layer
+            #a numpy array (1,nOut) containing the output of the layer
+            now returns ndarray (nNeurons_final_layer,1) loss value
         """
-        loss = self.loss.calculateDerivative(target, outp, debug=True)
-        deltas = self.layers[-1].computeDerivative(loss, 1.0)
+        self.loss_value = self.loss.calculateDerivative(target, outp)
+        if np.max(np.abs(self.loss_value)) > 10.0:
+            print("idx:", idx)
+            print("target:\n",target)
+            print("output:\n",outp)
+            print("loss value:\n", self.loss_value)
+            raise ValueError
+        deltas = self.layers[-1].computeDerivative(self.loss_value, np.ones(()))
         for l in range(len(self.layers)-2, -1, -1):
             next_weights_biasless = self.layers[l+1].weights[1:, :]
             deltas = self.layers[l].computeDerivative(deltas, next_weights_biasless)
-        return loss
+        return self.loss_value
 
     def _update_weights(self, learningRate):
         """
@@ -170,8 +187,8 @@ class MultilayerPerceptron(Classifier):
             if verbose:
                 print("Training epoch {0}/{1}.."
                       .format(epoch + 1, self.epochs))
-                print("feed_forward", self._feed_forward(self.testSet.input[0]), "->",
-                      self.classify(self.testSet.input[0]), "=?=", self.testSet.label[0])
+                #print("feed_forward", self._feed_forward(self.testSet.input[0]).T, "->",
+                #      self.classify(self.testSet.input[0]), "=?=", self.testSet.label[0].T)
 
             self._train_one_epoch()
 
@@ -198,14 +215,20 @@ class MultilayerPerceptron(Classifier):
         """
         Train one epoch, seeing all input instances
         """
+        import time
+        start_time = time.time()
         epoch_losses = []
         # img has already a 1 added for the bias.
-        for img, label, idx in zip(self.trainingSet.input,
-                              self.trainingSet.label,
-                              range(self.trainingSet.input.shape[1])):
+        for img, label, idx in zip(
+                self.trainingSet.input,
+                self.trainingSet.label,
+                range(len(self.trainingSet.input))):
 
-            # Use LogisticLayer to do the job
-            # Feed it with inputs
+            if idx % 100 == 0 and idx != 0:
+                print("Datapoint", idx, "/", len(self.trainingSet.input),
+                      "Mean loss:", np.mean(epoch_losses),
+                      "Elapsed Time: {0:.2f}s".format(time.time()-start_time)
+                      )
 
             # Do a forward pass to calculate the output and the error
             outp = self._feed_forward(img, idx=idx)
@@ -215,9 +238,15 @@ class MultilayerPerceptron(Classifier):
             # in case of an output layer
             #self.layer.computeDerivative(self.loss.calculateDerivative(
             #                             label,self.layer.outp), 1.0)
-            epoch_losses.append(self._compute_error(label, outp))
-            self._update_weights(self.learningRate)
+            try:
+                epoch_losses.append(self._compute_error(label, outp, idx=idx))
+                self._update_weights(self.learningRate)
+            except FloatingPointError:
+                print("encountered overflow on index", idx, "output is", outp)
+                continue
 
+            if idx % 100 == 0:
+                pass
         self.losses.append(np.mean(epoch_losses))
 
 

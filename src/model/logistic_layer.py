@@ -52,6 +52,7 @@ class LogisticLayer():
 
         self.inp = np.ndarray((nIn+1, 1))
         self.inp[0] = 1
+        self.preactivation = np.ndarray((nOut, 1))
         self.outp = np.ndarray((nOut, 1))
         self.deltas = np.zeros((nOut, 1))
 
@@ -87,11 +88,10 @@ class LogisticLayer():
         """
 
         # Here you have to implement the forward pass
-        self.inp = inp
-        outp = self._fire(inp)
-        self.outp = outp
-
-        return outp
+        self.inp[:] = np.reshape(inp, (self.nIn+1, 1))
+        self.preactivation[:] = np.reshape(np.dot(inp, self.weights), (self.nOut,1))
+        self.outp[:] = np.reshape(self.activation(self.preactivation), (self.nOut,1))
+        return self.outp
 
     def computeDerivative(self, next_derivatives, next_weights):
         """
@@ -101,8 +101,13 @@ class LogisticLayer():
         ----------
         next_derivatives: ndarray
             a numpy array containing the derivatives from next layer
+            for the last layer this is a (10,1) ndarray (multivariate case) or a (1,1) binary classification
+            otherwise dimension (nNeurons_next_layer, 1)
         next_weights : ndarray
             a numpy array containing the weights from next layer
+            for the last layer this is just a single value 1.0
+            otherwise dimension (nOut_this_layer==nNeurons_this_layer, nNeurons_next_layer)
+            !!! the biases from the weights array are already removed (if there were any)
 
         Change deltas
         -------
@@ -126,17 +131,11 @@ class LogisticLayer():
 
         # Or even more general: doesn't care which activation function is used
         # dado: derivative of activation function w.r.t the output
+
+
         dado = self.activationDerivative(self.outp)
-        #self.deltas = (dado * np.dot(next_derivatives, next_weights))
-        #                            d_downstream,     weights_wihtout bias.
-
-
-        # for each of the neurons in this layer:
-        for j in range(len(dado)):
-            self.deltas[j] = 0
-            for k in range(len(next_derivatives)):
-                self.deltas[j] += next_derivatives[k] * (1 if self.isClassifierLayer else next_weights[j,k])
-            self.deltas[j] *= dado[j]
+        self.deltas = (dado * np.dot(next_weights, next_derivatives))
+        # since the dimensions have changed, the order in the dot product is changed, too.
 
         # Or you can explicitly calculate the derivatives for two cases
         # Page 40 Back-propagation slides
@@ -157,10 +156,8 @@ class LogisticLayer():
 
         # weight updating as gradient descent principle
         for neuron in range(0, self.nOut):
-            self.weights[:, neuron] -= (learningRate *
-                                        self.deltas[neuron] *
-                                        self.inp)
-        
-
-    def _fire(self, inp):
-        return self.activation(np.dot(inp, self.weights))
+            for feature in range(self.nIn +1):
+                update = learningRate * self.deltas[neuron] * self.inp[feature]
+                if update > 1:
+                    raise ValueError
+                self.weights[feature, neuron] -= update

@@ -105,16 +105,37 @@ class BinaryCrossEntropyError(Error):
     def errorString(self):
         self.errorString = 'bce'
 
-    def calculateError(self, target, output):
-        return np.sum(target*np.log(output) + (1-target)*np.log(1-output))
+    def calculateError(self, target: np.ndarray, output: np.ndarray):
+        """
+        :param target: ndarray (nNeurons_final_layer, 1)
+        :param output: ndarray (nNeurons_final_layer, 1)
+        :return: float
+
+        BCE always positive, tends towards 0 for better match
+        """
+        assert max(output) <= 1.0 and min(output) > 0.0, "output not in (0,1]"+str(output)
+        n = np.asarray(target).size
+        return -np.sum(target*np.log(output) + (1-target)*np.log(1-output))/n
         
-    def calculateDerivative(self, target, output, debug=False):
+    def calculateDerivative(self, target: np.ndarray, output: np.ndarray, debug=False):
+        """
+        :param target: ndarray (nNeurons_final_layer, 1)
+        :param output: ndarray (nNeurons_final_layer, 1)
+        :return: ndarray (nNeurons_final_layer,1)
+            returns the derivative of the loss for each of the outputs
+            from the network's final layer dE/do_j
+
+        BCE always positive, tends towards 0 for better match
+        """
+
+        assert max(output) <= 1.0 and min(output) > 0.0, "output not in (0,1]"+str(output)
         # BCEPrime = -target/output + (1-target)/(1-output)
         if debug:
             debug = 0
-        np.seterr(over="raise", divide="raise")
+        np.seterr(over="raise", divide="raise", invalid='raise')
 
-        return -target/output + (1-target)/(1-output)
+        real_bce =  -target/output + (1-target)/(1-output)
+        return np.clip(real_bce, -10, 10)
  
 
 class CrossEntropyError(Error):
