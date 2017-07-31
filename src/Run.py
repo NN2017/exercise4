@@ -17,6 +17,8 @@ from report.performance_plot import PerformancePlot
 def main():
     #data = MNISTSeven("../data/mnist_seven.csv", 3000, 1000, 1000)
     data_all = MNISTSeven("../data/mnist_seven.csv", 3000, 1000, 1000, targetDigit="")
+    data_all2 = MNISTSeven("../data/mnist_seven.csv", 3000, 1000, 1000, targetDigit="")
+    data_all3 = MNISTSeven("../data/mnist_seven.csv", 3000, 1000, 1000, targetDigit="")
 
     # myStupidClassifier = StupidRecognizer(data.trainingSet,
     #                                       data.validationSet,
@@ -42,10 +44,33 @@ def main():
                                            [20], # sizes of the hidden layers
                                            loss='bce',
                                            inputWeights=None,
-                                           epochs=5,
+                                           epochs=20,
                                            outputActivation="softmax",
-                                           clip=10
+                                           clip=None
                                            )
+
+    myMLPClassifier2 = MultilayerPerceptron(data_all2.trainingSet,
+                                           data_all2.validationSet,
+                                           data_all2.testSet,
+                                           [30], # sizes of the hidden layers
+                                           loss='bce',
+                                           inputWeights=None,
+                                           epochs=20,
+                                           outputActivation="softmax",
+                                           clip=None
+                                           )
+
+    myMLPClassifier3 = MultilayerPerceptron(data_all3.trainingSet,
+                                           data_all3.validationSet,
+                                           data_all3.testSet,
+                                           [20, 20], # sizes of the hidden layers
+                                           loss='bce',
+                                           inputWeights=None,
+                                           epochs=20,
+                                           outputActivation="softmax",
+                                           clip=None
+                                           )
+
 
     print("=========================")
     # Train the classifiers
@@ -65,6 +90,8 @@ def main():
 
     print("\nMulti Layer Perceptron has been training..")
     myMLPClassifier.train()
+    myMLPClassifier2.train()
+    myMLPClassifier3.train()
     print("Done")
 
 
@@ -91,9 +118,16 @@ def main():
     # #evaluator.printComparison(data.testSet, lrPred)
     # evaluator.printAccuracy(data.testSet, lrPred)
 
-    print("\nResult of the Multi Layer Perceptron:")
+    print("\nResult of the Multi Layer Perceptron1:")
     mlpPred = myMLPClassifier.evaluate()
-    evaluator.printAccuracy(data_all.testSet, mlpPred)
+    evaluator.printAccuracy(data_all.testSet, mlpPred, oneHot=True)
+    print("\nResult of the Multi Layer Perceptron2:")
+    mlpPred2 = myMLPClassifier2.evaluate()
+    evaluator.printAccuracy(data_all2.testSet, mlpPred2, oneHot=True)
+    print("\nResult of the Multi Layer Perceptron3:")
+    mlpPred3 = myMLPClassifier3.evaluate()
+    evaluator.printAccuracy(data_all3.testSet, mlpPred3, oneHot=True)
+
 
     # Draw
     # plotLR = PerformancePlot("Logistic Regression validation")
@@ -101,8 +135,14 @@ def main():
     #                             myLRClassifier.epochs)
     #
     plotMLP = PerformancePlot("Multi Layer Perceptron validation")
-    plotMLP.draw_performance_epoch(myMLPClassifier.performances,
-                                  myMLPClassifier.epochs)
+    plotMLP.draw_performance_epoch(
+        [myMLPClassifier.performances, myMLPClassifier2.performances, myMLPClassifier3.performances],
+        [myMLPClassifier.epochs, myMLPClassifier2.epochs, myMLPClassifier3.epochs],
+        colors=["r", "b", "g"],
+        names=["Hiddens: "+str(myMLPClassifier.hypes),
+               "Hiddens: " + str(myMLPClassifier2.hypes),
+               "Hiddens: " + str(myMLPClassifier3.hypes)]
+    )
 
 
 if __name__ == '__main__':

@@ -24,7 +24,7 @@ class Error:
     def calculateError(self, target, output):
         # calculate the error between target and output
         pass
-        
+
     @abstractmethod
     def calculateDerivative(self, target, output):
         # calculate the error between target and output
@@ -41,7 +41,7 @@ class AbsoluteError(Error):
     def calculateError(self, target, output):
         # It is the numbers of differences between target and output
         return abs(target - output)
-        
+
     def calculateDerivative(self, target, output):
         pass
 
@@ -56,7 +56,7 @@ class DifferentError(Error):
     def calculateError(self, target, output):
         # It is the numbers of differences between target and output
         return target - output
-    
+
     def calculateDerivative(self, target, output):
         return -1
 
@@ -73,7 +73,7 @@ class MeanSquaredError(Error):
         # MSE = 1/n*sum (i=1 to n) of (target_i - output_i)^2)
         n = np.asarray(target).size
         return (1.0/n) * np.sum((target - output)**2)
-    
+
     def calculateDerivative(self, target, output):
         # MSEPrime = -n/2*(target - output)
         n = np.asarray(target).size
@@ -91,7 +91,7 @@ class SumSquaredError(Error):
     def calculateError(self, target, output):
         # SSE = 1/2*sum (i=1 to n) of (target_i - output_i)^2)
         return 0.5*np.sum((target - output)**2)
-        
+
     def calculateDerivative(self, target, output):
         # SSEPrime = -(target - output)
         return output - target
@@ -116,9 +116,11 @@ class BinaryCrossEntropyError(Error):
         """
         assert max(output) <= 1.0 and min(output) > 0.0, "output not in (0,1]"+str(output)
         n = np.asarray(target).size
-        return -np.sum(target*np.log(output) + (1-target)*np.log(1-output))/n
+
+        return -np.sum(np.multiply(target,np.log(output)) \
+                       + (np.subtract(1,target))*np.log(1-output)) /n
         
-    def calculateDerivative(self, target, output, debug=False, clip=1):
+    def calculateDerivative(self, target, output, clip=None): # 1):
         # type: (np.ndarray, np.ndarray, bool, int) -> np.ndarray
         """
         :param target: ndarray (nNeurons_final_layer, 1)
@@ -129,16 +131,16 @@ class BinaryCrossEntropyError(Error):
 
         BCE always positive, tends towards 0 for better match
         """
-
-        assert max(output) <= 1.0 and min(output) > 0.0, "output not in (0,1]"+str(output)
-        # BCEPrime = -target/output + (1-target)/(1-output)
-        if debug:
-            debug = 0
+        # assert max(output) <= 1.0 and min(output) > 0.0, "output not in (0,1]"+str(output)
+        # # BCEPrime = -target/output + (1-target)/(1-output)
         np.seterr(over="raise", divide="raise", invalid='raise')
 
-        real_bce = -target/output + (1-target)/(1-output)
-        return np.clip(real_bce, -clip, clip)
- 
+        real_bce = np.divide(np.subtract(1, target), np.subtract(1, output)) \
+                - np.divide(target, output)
+
+        clipped_bce =  real_bce if clip is None else np.clip(real_bce, -clip, clip)
+        return clipped_bce
+
 
 class CrossEntropyError(Error):
     """
@@ -150,6 +152,6 @@ class CrossEntropyError(Error):
 
     def calculateError(self, target, output):
         pass
-        
-    def calculateDerivative(self, target, output):
+
+    def calculateDerivativer(self, target, output):
         pass

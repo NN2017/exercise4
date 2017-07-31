@@ -49,9 +49,16 @@ class DataSet(object):
             self.label = list(map(lambda a: 1 if str(a) == targetDigit else 0, label))
         else:
             self.label = [
-                np.array([[1] if i == label[j] else [0] for i in range(10)])
+                [1 if i == label[j] else 0 for i in range(10)]
                 for j in range(len(label))
             ]
+            #
+            # def createOneHot(digit):
+            #     l = [0,0,0,0,0,0,0,0,0,0]
+            #     l[digit] = 1
+            #     return l
+            # self.label = list(map(lambda a: createOneHot(a), label))
+
         return
 
     def __iter__(self):

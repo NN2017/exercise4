@@ -71,13 +71,13 @@ class Activation:
         #norm = sum(Activation.sigmoid(netOutput))
         #return Activation.sigmoid(netOutput) / norm
         norm = sum(exp(netOutput))
-        return exp(netOutput) / norm
+        return divide(exp(netOutput), norm)
         
     @staticmethod
     def softmaxPrime(netOutput):
         # Here you have to code the softmax function
-        return Activation.softmax(netOutput) * (1 - Activation.softmax(netOutput))
-
+        # it is not necessary to do an softmax on this!
+        return netOutput * (1.0 - netOutput)
 
 
     @staticmethod

@@ -52,7 +52,6 @@ class LogisticLayer():
 
         self.inp = np.ndarray((nIn+1, 1))
         self.inp[0] = 1
-        self.preactivation = np.ndarray((nOut, 1))
         self.outp = np.ndarray((nOut, 1))
         self.deltas = np.zeros((nOut, 1))
 
@@ -87,10 +86,10 @@ class LogisticLayer():
             a numpy array (nOut,1) containing the output of the layer
         """
 
-        # Here you have to implement the forward pass
-        self.inp[:] = np.reshape(inp, (self.nIn+1, 1))
-        self.preactivation[:] = np.reshape(np.dot(inp, self.weights), (self.nOut,1))
-        self.outp[:] = np.reshape(self.activation(self.preactivation), (self.nOut,1))
+        self.inp = inp
+        outp = self._fire(inp)
+        self.outp = outp
+
         return self.outp
 
     def computeDerivative(self, next_derivatives, next_weights):
@@ -134,8 +133,8 @@ class LogisticLayer():
 
 
         dado = self.activationDerivative(self.outp)
-        self.deltas = (dado * np.dot(next_weights, next_derivatives))
-        # since the dimensions have changed, the order in the dot product is changed, too.
+        self.deltas = (dado * np.dot(next_derivatives, next_weights))
+
 
         # Or you can explicitly calculate the derivatives for two cases
         # Page 40 Back-propagation slides
@@ -156,8 +155,16 @@ class LogisticLayer():
 
         # weight updating as gradient descent principle
         for neuron in range(0, self.nOut):
-            for feature in range(self.nIn +1):
-                update = learningRate * self.deltas[neuron] * self.inp[feature]
-                if update > 1:
-                    raise(ValueError, "I don't want to have to high updates to the weights")
-                self.weights[feature, neuron] -= update
+            # theoretically an alternative method, but below runs faster.
+            #for feature in range(self.nIn +1):
+            #    update = learningRate * self.deltas[neuron] * self.inp[feature]
+            #    if update > 1:
+            #        raise(ValueError, "I don't want to have to high updates to the weights")
+            #    self.weights[feature, neuron] -= update
+
+            self.weights[:, neuron] -= (learningRate *
+                                        self.deltas[neuron] *
+                                        self.inp)
+
+    def _fire(self, inp):
+        return self.activation(np.dot(inp, self.weights))
